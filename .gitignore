@@ -5,3 +5,7 @@
 !gradle-wrapper.jar
 
 .idea/
+
+**/src/main/**/day*.in
+
+private/
