@@ -7,5 +7,5 @@
 .idea/
 
 **/src/main/**/day*.in
-
+**/src/main/**/samples/**
 private/
