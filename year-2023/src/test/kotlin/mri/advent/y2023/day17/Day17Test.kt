@@ -12,11 +12,17 @@ class Day17Test {
 
     @Test
     fun `test part1`() {
-        assertEquals(7, Day17(sample).part1())
+        assertEquals(102, Day17(sample).part1())
     }
 
     @Test
     fun `test part2`() {
         assertEquals(5, Day17(sample).part2())
     }
+
+    @Test
+    fun `models test`() {
+        assertEquals(4, Point(1, 1).neighbors().size)
+    }
+
 }
