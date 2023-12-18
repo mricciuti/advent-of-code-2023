@@ -10,6 +10,7 @@ enum class Direction(val x: Int, val y: Int) {
     LEFT(-1, 0);
 
     fun opposite() = Direction.entries.first { it.x == -this.x && it.y == -this.y }
+    fun isTurn90(other: Direction) = (this.x + other.x) != 0 && (this.y + other.y != 0)
 }
 
 data class Point(val x: Int, val y: Int) {
@@ -22,17 +23,20 @@ data class Cell(val position: Point, val heatLoss: Int)
 // Holder class:    current cell with previous moves from same line
 data class CellState(val cell: Cell, val lineMoves: MutableList<Direction> = mutableListOf()) {
 
-    fun nextMoveAllowed(nextDirection: Direction): Boolean {
+    fun nextMoveAllowed(nextDirection: Direction, part2: Boolean = false): Boolean {
         if (this.lineMoves.isEmpty()) {
             return true
         }
-        // cannot reverse direction
         if (lineMoves.last() == nextDirection.opposite()) {
-            return false
+            return false   // cannot reverse direction
         }
-        // no more than 3 moves allowed in same line
+        val maxMovesSameLine = if (part2) 10 else 3
         if (lineMoves.last() == nextDirection) {
-            return lineMoves.size < 3
+            return lineMoves.size < maxMovesSameLine  // no more than 3 (or 10)  moves allowed in same line
+        }
+        // part 2 constraint: cannot turn until moved 4 times same direction
+        if (part2 && this.lineMoves.last().isTurn90(nextDirection)) {
+            return lineMoves.size > 3
         }
         return true
     }
@@ -63,13 +67,8 @@ data class Grid(val cells: List<List<Cell>>) {
         .filter { inGrid(it.second) }
         .map { it.first to cellAt(it.second) }
 
-
-    fun debug(message: Any) {
-        //println(message)
-    }
-
     // pseudo dijkstra with custom constraints
-    fun dijkstra(sourcePos: Point, targetPos: Point): Int {
+    fun dijkstra(sourcePos: Point, targetPos: Point, part2: Boolean = false): Int {
         val source = cellAt(sourcePos)
         val target = cellAt(targetPos)
 
@@ -84,22 +83,25 @@ data class Grid(val cells: List<List<Cell>>) {
             val current = queue.poll() //  pair ( state(cell, dir)  ,  current heatLoss from start )
             val currentState = current.first
 
-            // found target ?
             if (currentState.cell == target) {
                 return current.second
             }
-            // already seen ?
             if (visited.contains(currentState)) {
                 continue
             }
             visited.add(currentState)
 
-            // enqueue valid next states
             neighbors(currentState.cell)
-                .filter { currentState.nextMoveAllowed(it.first) }
+                .filter { currentState.nextMoveAllowed(it.first, part2) }
                 .forEach { neighbor -> queue.offer(currentState.next(neighbor.second, neighbor.first) to current.second + neighbor.second.heatLoss) }
         }
         throw IllegalStateException("Solution not found!")
+    }
+
+    fun minHeatPath(part2: Boolean = false): Int {
+        val start = Point(0, 0)
+        val target = Point(width - 1, height - 1)
+        return dijkstra(start, target, part2)
     }
 }
 
@@ -107,14 +109,13 @@ open class Day17(inFile: String = "/day17.in") : BaseDay(inFile) {
 
     private val grid = Grid(data.lines().mapIndexed { y, s -> s.toCharArray().mapIndexed { x, c -> Cell(Point(x, y), c.digitToInt()) } })
 
-    //817  => time taken: 1078 ms
-    override fun part1() = grid.dijkstra(Point(0, 0), Point(grid.width - 1, grid.height - 1))
+    //817  => time taken: 602 ms
+    override fun part1() = grid.minHeatPath()
 
-    override fun part2(): Any {
-        return ""
-    }
+    // 925 => time taken: 1404 ms
+    override fun part2() =  grid.minHeatPath(part2 = true)
+    
 }
-
 fun main() {
     Day17().run()
 }
